@@ -12,12 +12,15 @@ phrases = {
     "I am in pain",
 
 
-    "A":
-    "A",
+    "STAND":
+    "I need to stand",
 
 
-    "B":
-    "B"
+    "SIT":
+    "I need to sit",
+
+    "COOL":
+    "I am alright",
 }
 
 

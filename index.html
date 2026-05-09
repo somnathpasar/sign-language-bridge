@@ -1,117 +1,147 @@
 <!DOCTYPE html>
 <html>
 
+<head>
+    <title>Sign Language Bridge</title>
+
+    <style>
+
+        body {
+            margin: 0;
+            background: black;
+            font-family: "Segoe UI", Arial;
+            overflow: hidden;
+        }
+
+        header {
+            position: absolute;
+            top: 0;
+            width: 100%;
+            background: rgba(235, 143, 37, 0.9);
+            color: white;
+            padding: 12px;
+            text-align: center;
+            font-size: 20px;
+            z-index: 10;
+        }
+
+        video {
+            width: 100vw;
+            height: 100vh;
+            object-fit: cover;
+        }
+
+        .overlay {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.85);
+            padding: 15px 25px;
+            border-radius: 12px;
+            font-size: 24px;
+            font-weight: 600;
+            color: #111827;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+
+        .alert {
+            position: absolute;
+            top: 70px;
+            left: 50%;
+            transform: translateX(-50%);
+            padding: 10px 20px;
+            border-radius: 10px;
+            font-weight: 600;
+            display: none;
+        }
+
+        .danger {
+            background: #fee2e2;
+            color: #991b1b;
+        }
+
+        .warning {
+            background: #fef3c7;
+            color: #92400e;
+        }
+
+    </style>
+</head>
+
 <body>
 
-<h1>Sign Language Bridge</h1>
+<header>
+    Sign Language Bridge
+</header>
 
-<video
-    id="video"
-    width="500"
-    autoplay>
-</video>
+<video id="video" autoplay></video>
 
+<div class="overlay" id="text">
+    Waiting for sign...
+</div>
 
-<h2 id="result">
-    Waiting...
-</h2>
-
+<div class="alert" id="alert"></div>
 
 <script>
 
-const video =
-document.getElementById(
-    "video"
-);
+const video = document.getElementById("video");
+const text = document.getElementById("text");
+const alertBox = document.getElementById("alert");
 
-const result =
-document.getElementById(
-    "result"
-);
-
-
-navigator.mediaDevices
-.getUserMedia({
-    video:true
-})
-.then(stream=>{
-
-    video.srcObject =
-    stream;
-
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => {
+    video.srcObject = stream;
 });
 
+const canvas = document.createElement("canvas");
 
-const canvas =
-document.createElement(
-    "canvas"
-);
+setInterval(() => {
 
+    canvas.width = video.videoWidth;
+    canvas.height = video.videoHeight;
 
-setInterval(()=>{
+    const ctx = canvas.getContext("2d");
+    ctx.drawImage(video, 0, 0);
 
+    canvas.toBlob(blob => {
 
-    canvas.width =
-    video.videoWidth;
+        const formData = new FormData();
+        formData.append("file", blob, "frame.jpg");
 
+        fetch("http://127.0.0.1:8000/predict", {
+            method: "POST",
+            body: formData
+        })
 
-    canvas.height =
-    video.videoHeight;
+        .then(res => res.json())
+        .then(data => {
 
+            // show spoken sentence only
+            text.innerText = data.message;
 
-    const context =
-    canvas.getContext(
-        "2d"
-    );
-
-
-    context.drawImage(
-        video,
-        0,
-        0
-    );
-
-
-    canvas.toBlob(blob=>{
-
-
-        const formData =
-        new FormData();
-
-
-        formData.append(
-            "file",
-            blob,
-            "frame.jpg"
-        );
-
-
-        fetch(
-            "http://127.0.0.1:8000/predict",
-            {
-                method:"POST",
-                body:formData
+            // alerts
+            if (data.prediction === "HELP") {
+                alertBox.style.display = "block";
+                alertBox.className = "alert danger";
+                alertBox.innerText = "EMERGENCY ALERT";
             }
-        )
 
-        .then(response=>
-            response.json()
-        )
+            else if (data.prediction === "PAIN") {
+                alertBox.style.display = "block";
+                alertBox.className = "alert warning";
+                alertBox.innerText = "Patient in Pain";
+            }
 
-        .then(data=>{
-
-
-            result.innerText =
-            data.prediction;
-
+            else {
+                alertBox.style.display = "none";
+            }
 
         });
 
+    }, "image/jpeg");
 
-    },"image/jpeg");
-
-
-},2000);
+}, 1200);
 
 </script>
 
