@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<body>
+
+<h1>Sign Language Bridge</h1>
+
+<video
+    id="video"
+    width="500"
+    autoplay>
+</video>
+
+
+<h2 id="result">
+    Waiting...
+</h2>
+
+
+<script>
+
+const video =
+document.getElementById(
+    "video"
+);
+
+const result =
+document.getElementById(
+    "result"
+);
+
+
+navigator.mediaDevices
+.getUserMedia({
+    video:true
+})
+.then(stream=>{
+
+    video.srcObject =
+    stream;
+
+});
+
+
+const canvas =
+document.createElement(
+    "canvas"
+);
+
+
+setInterval(()=>{
+
+
+    canvas.width =
+    video.videoWidth;
+
+
+    canvas.height =
+    video.videoHeight;
+
+
+    const context =
+    canvas.getContext(
+        "2d"
+    );
+
+
+    context.drawImage(
+        video,
+        0,
+        0
+    );
+
+
+    canvas.toBlob(blob=>{
+
+
+        const formData =
+        new FormData();
+
+
+        formData.append(
+            "file",
+            blob,
+            "frame.jpg"
+        );
+
+
+        fetch(
+            "http://127.0.0.1:8000/predict",
+            {
+                method:"POST",
+                body:formData
+            }
+        )
+
+        .then(response=>
+            response.json()
+        )
+
+        .then(data=>{
+
+
+            result.innerText =
+            data.prediction;
+
+
+        });
+
+
+    },"image/jpeg");
+
+
+},2000);
+
+</script>
+
+</body>
+</html>
